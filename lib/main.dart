@@ -4,11 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get_it/get_it.dart';
-
-import 'controllers/config.dart';
 import 'home_page.dart';
 import 'models/config_model.dart';
-import 'notification/notification_setup.dart';
 
 GetIt getIt = GetIt.instance;
 
@@ -22,12 +19,6 @@ Future<void> main() async {
   var config = ConfigModel();
 
   getIt.registerSingleton<ConfigModel>(config);
-
-  await Config.setDeviceId();
-
-  await NotificationSetup.setupFlutterNotifications();
-
-  await NotificationSetup.initCurrentNotificationPayload();
 
   runApp(const MyApp());
 }

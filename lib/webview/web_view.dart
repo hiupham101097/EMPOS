@@ -1,142 +1,122 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:get_it/get_it.dart';
-import 'dart:convert';
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-
-import '../controllers/config.dart';
-import '../controllers/postapi.dart';
-import '../models/config_model.dart';
-import '../models/key_value.dart';
-import '../models/user_model.dart';
 
 class WebViewPage extends StatefulWidget {
   final VoidCallback voidCallback;
 
-  const WebViewPage({required this.voidCallback, super.key});
+  const WebViewPage({super.key, required this.voidCallback});
 
   @override
-  State<WebViewPage> createState() =>
-      // ignore: no_logic_in_create_state
-      _WebViewPageState(voidCallback: voidCallback);
+  State<WebViewPage> createState() => _WebViewPageState();
 }
 
 class _WebViewPageState extends State<WebViewPage> {
   final GlobalKey webViewKey = GlobalKey();
-  final VoidCallback voidCallback;
-  final defaulUrl = 'http://nhatdev.empos.info/vi/web-reponsive-order';
 
-  _WebViewPageState({required this.voidCallback});
+  final String defaultUrl = 'https://boss.empos.info/vi/login';
 
-  @override
-  void initState() {
-    super.initState();
-    setState(() {});
-  }
+  late InAppWebViewController webViewController;
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardVisibilityBuilder(
-      builder: (context, isKeyboardVisible) {
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: isKeyboardVisible == false
-              ? getPlatformWebView(context)
-              : getWebView(voidCallback),
-        );
-      },
-    );
-  }
+    return Scaffold(
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: InAppWebView(
+          key: webViewKey,
 
-  Widget getPlatformWebView(BuildContext contex) {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      MediaQueryData mediaQueryData = MediaQuery.of(context);
-      return OverflowBox(
-        maxWidth: mediaQueryData.size.width + 1,
-        maxHeight: mediaQueryData.size.height + 1,
-        //- Scaffold.of(context).appBarMaxHeight!
-        alignment: Alignment.topCenter,
-        child: getWebView(voidCallback),
-      );
-    } else {
-      return getWebView(voidCallback);
-    }
-  }
+          initialUrlRequest: URLRequest(url: WebUri(defaultUrl)),
 
-  InAppWebView getWebView(VoidCallback voidCallback) {
-    GetIt getIt = GetIt.instance;
-    var config = getIt.get<ConfigModel>();
+          initialSettings: InAppWebViewSettings(
+            isInspectable: kDebugMode,
 
-    InAppWebViewSettings settings = InAppWebViewSettings(
-      isInspectable: kDebugMode,
-      mediaPlaybackRequiresUserGesture: false,
-      allowsInlineMediaPlayback: true,
-      iframeAllowFullscreen: true,
-      transparentBackground: true,
-      allowUniversalAccessFromFileURLs: true,
-      useShouldInterceptRequest: true,
-      supportZoom: false,
-      mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-    );
+            javaScriptEnabled: true,
 
-    return InAppWebView(
-      key: webViewKey,
-      initialSettings: settings,
-      onWebViewCreated: (controller) async {
-        config.controller = controller;
+            transparentBackground: false,
 
-        if (defaultTargetPlatform != TargetPlatform.android ||
-            await WebViewFeature.isFeatureSupported(
-              WebViewFeature.WEB_MESSAGE_LISTENER,
-            )) {
-          await controller.addWebMessageListener(
-            WebMessageListener(
-              jsObjectName: "mobileHub",
-              onPostMessage: (message, sourceOrigin, isMainFrame, replyProxy) {
-                config.replyProxy = replyProxy;
+            useWideViewPort: true,
+            loadWithOverviewMode: true,
 
-                if (message != null && message.data != null) {
-                  var json = jsonDecode(message.data);
+            supportZoom: false,
+            builtInZoomControls: false,
+            displayZoomControls: false,
 
-                  if (json['value'] is List) {
-                    var accessToken = json['value'][0];
-                    var dataUser = UserModel.fromJson(json['value'][1]);
-                    config.token = accessToken;
+            textZoom: 100,
 
-                    json['value'] = accessToken;
+            preferredContentMode: UserPreferredContentMode.MOBILE,
 
-                    var keyValue = KeyValue.fromJson(json);
+            mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
 
-                    if (keyValue.key == "USER:LOGIN") {
-                      keyValue = Config.getDeviceConnect();
+            mediaPlaybackRequiresUserGesture: false,
+            allowsInlineMediaPlayback: true,
 
-                      replyProxy.postMessage(
-                        WebMessage(data: jsonEncode(keyValue)),
-                      );
-                    }
-                  } else {
-                    var keyValue = KeyValue.fromJson(json);
-                    if (keyValue.key == "USER:LOGOUT") {
-                      PostDefaultUrlApi().signOut();
-                      config.token = null;
-                      config.firebaseToken = null;
-                    }
+            iframeAllowFullscreen: true,
+
+            allowUniversalAccessFromFileURLs: true,
+
+            useShouldInterceptRequest: false,
+
+            userAgent:
+                "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+          ),
+
+          onWebViewCreated: (controller) {
+            webViewController = controller;
+          },
+
+          onLoadStart: (controller, url) {
+            debugPrint("START: $url");
+          },
+
+          onLoadStop: (controller, url) async {
+            debugPrint("STOP: $url");
+
+            await controller.evaluateJavascript(
+              source: """
+                (function() {
+
+                  var oldMeta = document.querySelector('meta[name="viewport"]');
+
+                  if (oldMeta) {
+                    oldMeta.remove();
                   }
-                }
-              },
-            ),
-          );
-        }
 
-        await controller.loadUrl(
-          urlRequest: URLRequest(url: WebUri(defaulUrl!)),
-        );
-      },
-      onLoadStart: (controller, url) {},
-      onLoadStop: (controller, url) {
-        voidCallback();
-      },
+                  var meta = document.createElement('meta');
+
+                  meta.name = 'viewport';
+
+                  meta.content =
+                    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+
+                  document.getElementsByTagName('head')[0]
+                    .appendChild(meta);
+
+                  document.body.style.zoom = "1.0";
+
+                  document.body.style.webkitTextSizeAdjust = "100%";
+
+                })();
+              """,
+            );
+
+            widget.voidCallback();
+          },
+
+          onConsoleMessage: (controller, consoleMessage) {
+            debugPrint("Console: ${consoleMessage.message}");
+          },
+
+          onReceivedError: (controller, request, error) {
+            debugPrint("ERROR: ${error.description}");
+          },
+
+          onReceivedHttpError: (controller, request, response) {
+            debugPrint("HTTP ERROR: ${response.statusCode}");
+          },
+        ),
+      ),
     );
   }
 }

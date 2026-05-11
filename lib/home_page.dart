@@ -4,7 +4,6 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get_it/get_it.dart';
 
 import 'models/config_model.dart';
-import 'notification/notification_setup.dart';
 import 'webview/web_view.dart';
 
 class HomePage extends StatefulWidget {
@@ -23,10 +22,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-
-    NotificationSetup.requestPermissions();
-
-    NotificationSetup.configureSelectNotification();
 
     WidgetsBinding.instance.addObserver(this);
   }
@@ -95,7 +90,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       await config.controller?.loadUrl(
         urlRequest: URLRequest(url: WebUri(url)),
       );
-    } else if (config.url == config.baseUrl) {
+    } else {
       await config.controller?.reload();
     }
   }
