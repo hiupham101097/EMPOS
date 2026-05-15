@@ -1,4 +1,4 @@
-package com.empos.app
+package com.bossempos.app
 
 import io.flutter.embedding.android.FlutterActivity
 
