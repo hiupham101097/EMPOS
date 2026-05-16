@@ -14,7 +14,7 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   final GlobalKey webViewKey = GlobalKey();
 
-  final String defaultUrl = 'https://boss.empos.info/vi/login';
+  final String defaultUrl = 'https://boss.empos.vn';
 
   late InAppWebViewController webViewController;
 
