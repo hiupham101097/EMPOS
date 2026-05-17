@@ -57,6 +57,12 @@ class _WebViewPageState extends State<WebViewPage> {
             allowUniversalAccessFromFileURLs: true,
 
             useShouldInterceptRequest: false,
+            
+            cacheEnabled: true,
+            cacheMode: CacheMode.LOAD_CACHE_ELSE_NETWORK,
+            hardwareAcceleration: true,
+            domStorageEnabled: true,
+            databaseEnabled: true,
 
             userAgent:
                 "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
